@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f3f4f6;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1024px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-circle {
+            width: 4rem;
+            height: 4rem;
+            background-color: black;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 2rem;
+        }
+
+        .campaign-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .campaign-row:last-child {
+            border-bottom: none;
+        }
+
+        .initials {
+            width: 4rem;
+            text-align: center;
+        }
+
+        .initials-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .campaign-info {
+            flex: 1;
+            padding: 0 1.5rem;
+        }
+
+        .campaign-step {
+            color: #374151;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .campaign-product {
+            color: #6b7280;
+        }
+
+        .conversion-rate {
+            width: 5rem;
+            text-align: center;
+        }
+
+        .conversion-number {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .revenue {
+            width: 6rem;
+            text-align: right;
+        }
+
+        .revenue-number {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #059669;
+        }
+
+        @media (max-width: 768px) {
+            .campaign-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 1rem 0;
+            }
+
+            .campaign-info {
+                padding: 0;
+                width: 100%;
+            }
+
+            .conversion-rate,
+            .revenue {
+                width: auto;
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section" id="section1">
+            <div class="logo">
+                <div class="logo-circle">
+                    <div class="logo-icon">↑↑</div>
+                </div>
+            </div>
+            <h1 class="title" id="title1">Top 5 Campaigns - Section 1</h1>
+            <div id="campaigns1"></div>
+        </div>
+
+        <div class="section" id="section2">
+            <div class="logo">
+                <div class="logo-circle">
+                    <div class="logo-icon">↑↑</div>
+                </div>
+            </div>
+            <h1 class="title" id="title2">Top 5 Campaigns - Section 2</h1>
+            <div id="campaigns2"></div>
+        </div>
+    </div>
+
+    <script>
+        // Function to transform Python dict format to display format
+        function transformPythonData(pythonDict) {
+            const metrics = pythonDict.Metric;
+            const values = pythonDict.Value;
+            
+            // Create a mapping of metric to value
+            const dataMap = {};
+            metrics.forEach((metric, index) => {
+                dataMap[metric] = values[index];
+            });
+            
+            return {
+                initials: parseInt(dataMap['Campaign 1 Approvals'] || '0'),
+                step: dataMap['Campaign 1 Name'] || '',
+                product: dataMap['Campaign 1 Name'] || '',
+                category: '',
+                conversionRate: dataMap['Campaign 1 Approval Rate'] ? `${dataMap['Campaign 1 Approval Rate']}%` : '0%',
+                revenue: dataMap['Campaign 1 Revenue'] ? `$${dataMap['Campaign 1 Revenue']}` : '$0'
+            };
+        }
+
+        // Function to create campaign row HTML
+        function createCampaignRow(campaign) {
+            return `
+                <div class="campaign-row">
+                    <div class="initials">
+                        <span class="initials-number">${campaign.initials}</span>
+                    </div>
+                    <div class="campaign-info">
+                        <div class="campaign-step">${campaign.step}</div>
+                        <div class="campaign-product">${campaign.product} ${campaign.category}</div>
+                    </div>
+                    <div class="conversion-rate">
+                        <span class="conversion-number">${campaign.conversionRate}</span>
+                    </div>
+                    <div class="revenue">
+                        <span class="revenue-number">${campaign.revenue}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Function to render campaigns for a section
+        function renderCampaigns(campaigns, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = campaigns.map(createCampaignRow).join('');
+        }
+
+        // Example Python data - replace with your actual data
+        const campaign_data_1 = {
+            'Metric': ['Campaign 1 Name', 'Campaign 1 Revenue', 'Campaign 1 Approvals', 'Campaign 1 Approval Rate', 'client_id', 'last_daily_update_xpay'],
+            'Value': ['CBDynamax+ PE step 1 OAS (Main)', '99', '8', '27.6', '10008', '1750165117']
+        };
+
+        const campaign_data_2 = {
+            'Metric': ['Campaign 1 Name', 'Campaign 1 Revenue', 'Campaign 1 Approvals', 'Campaign 1 Approval Rate', 'client_id', 'last_daily_update_xpay'],
+            'Value': ['PowerMax Elite step 2 JB (Premium)', '156', '12', '35.8', '10009', '1750165118']
+        };
+
+        // Add more campaign data here for section 2
+        const campaign_data_3 = {
+            'Metric': ['Campaign 1 Name', 'Campaign 1 Revenue', 'Campaign 1 Approvals', 'Campaign 1 Approval Rate', 'client_id', 'last_daily_update_xpay'],
+            'Value': ['BoostMax Pro step 1 XL (Standard)', '245', '15', '42.3', '10010', '1750165119']
+        };
+
+        // Transform the data and render
+        const section1Campaigns = "[[{\"initials\": 9, \"step\": \"Step 1 - ViraFlexx Max Male Enhancement JB (Main)\", \"product\": \"Step 1 - ViraFlexx Max Male Enhancement JB (Main)\", \"category\": \"\", \"conversionRate\": \"29.0%\", \"revenue\": \"$119\"}]]";
+        const section2Campaigns = "[[{\"initials\": 5, \"step\": \"Step 2 - ViraFlexx Max Pre-Workout JB Init\", \"product\": \"Step 2 - ViraFlexx Max Pre-Workout JB Init\", \"category\": \"\", \"conversionRate\": \"71.4%\", \"revenue\": \"$249\"}]]";
+
+
+
+        // Render both sections
+        renderCampaigns(section1Campaigns, 'campaigns1');
+        renderCampaigns(section2Campaigns, 'campaigns2');
+
+        // Optional: Function to update data dynamically
+        function updateCampaignData(newData, sectionNumber) {
+            const transformedCampaigns = newData.map(transformPythonData);
+            renderCampaigns(transformedCampaigns, `campaigns${sectionNumber}`);
+        }
+
+        // Example of how to use the update function:
+        // updateCampaignData([campaign_data_1, campaign_data_2], 1);
+    </script>
+</body>
+</html>

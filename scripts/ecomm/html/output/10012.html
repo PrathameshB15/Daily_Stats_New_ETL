@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f3f4f6;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1024px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: -2rem;
+        }
+
+        .logo-circle {
+            width: 4rem;
+            height: 4rem;
+            background-color: black;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 2rem;
+        }
+
+        .campaign-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .campaign-row:last-child {
+            border-bottom: none;
+        }
+
+        .initials {
+            width: 4rem;
+            text-align: center;
+        }
+
+        .initials-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .campaign-info {
+            flex: 1;
+            padding: 0 1.5rem;
+        }
+
+        .campaign-step {
+            color: #374151;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .campaign-product {
+            color: #6b7280;
+        }
+
+        .conversion-rate {
+            width: 5rem;
+            text-align: center;
+        }
+
+        .conversion-number {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .revenue {
+            width: 6rem;
+            text-align: right;
+        }
+
+        .revenue-number {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #059669;
+        }
+
+        @media (max-width: 768px) {
+            .campaign-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 1rem 0;
+            }
+
+            .campaign-info {
+                padding: 0;
+                width: 100%;
+            }
+
+            .conversion-rate,
+            .revenue {
+                width: auto;
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="icon.png" alt="Logo" width="100" height="100" />
+        </div>
+        <div id="yesterday-date" style="margin: 20px auto -10px auto; font-weight: bold; font-size: x-large; text-align: center;"></div>
+        <div class="section" id="section1">
+            
+            <h1 class="title" id="title1">Straight Sale Campaigns</h1>
+            <div id="campaigns1"></div>
+        </div>
+
+        <!-- <div class="section" id="section2">
+            
+            <h1 class="title" id="title2">Top 5 Step 2 Campaigns</h1>
+            <div id="campaigns2"></div>
+        </div> -->
+    </div>
+
+    <script>
+
+        // Function to transform Python dict format to display format
+        // function transformPythonData(pythonDict) {
+        //     if (!pythonDict || !Array.isArray(pythonDict.Metric) || !Array.isArray(pythonDict.Value)) {
+        //         return []; // Return empty list if data is invalid
+        //     }
+
+        //     const metrics = pythonDict.Metric;
+        //     const values = pythonDict.Value;
+        //     const campaigns = [];
+
+        //     for (let i = 0; i < metrics.length; i += 4) {
+        //         // Guard against index out of range
+        //         if (i + 3 >= metrics.length || i + 3 >= values.length) continue;
+
+        //         const dataMap = {
+        //             [metrics[i]]: values[i],
+        //             [metrics[i + 1]]: values[i + 1],
+        //             [metrics[i + 2]]: values[i + 2],
+        //             [metrics[i + 3]]: values[i + 3],
+        //         };
+
+        //         campaigns.push({
+        //             initials: parseInt(dataMap[metrics[i + 2]] || '0'),
+        //             step: dataMap[metrics[i]] || '',
+        //             product: dataMap[metrics[i]] || '',
+        //             category: '',
+        //             conversionRate: dataMap[metrics[i + 3]] ? `${dataMap[metrics[i + 3]]}%` : '0%',
+        //             revenue: dataMap[metrics[i + 1]] ? `$${dataMap[metrics[i + 1]]}` : '$0'
+        //         });
+        //     }
+
+        //     return campaigns;
+        // }
+
+        function transformPythonData(pythonDict) {
+            if (!pythonDict || !Array.isArray(pythonDict.Metric) || !Array.isArray(pythonDict.Value)) {
+                return []; // Return empty list if data is invalid
+            }
+
+            const metrics = pythonDict.Metric;
+            const values = pythonDict.Value;
+            const campaigns = [];
+
+            const campaignGroups = {};
+
+            // Step 1: Group metrics and values by campaign number using pattern in metric name
+            for (let i = 0; i < metrics.length; i++) {
+                const metricLabel = metrics[i]; // e.g., "Campaign 1 Revenue"
+                const value = values[i];
+                const match = metricLabel.match(/^Campaign (\d+) (.+)$/);
+
+                if (!match) continue;
+
+                const campaignNum = match[1];
+                const field = match[2];
+
+                if (!campaignGroups[campaignNum]) {
+                    campaignGroups[campaignNum] = {};
+                }
+
+                campaignGroups[campaignNum][field] = value;
+            }
+
+            // Step 2: Transform grouped data into the final campaign objects
+            for (const campaignNum of Object.keys(campaignGroups)) {
+                const data = campaignGroups[campaignNum];
+
+                campaigns.push({
+                    initials: parseInt(data["Approvals"] || '0'),
+                    step: data["Name"] || '',
+                    product: data["Name"] || '',
+                    category: data["Category"] || '',
+                    conversionRate: data["Approval Rate"] ? `${data["Approval Rate"]}%` : '0%',
+                    revenue: data["Revenue"] ? `$${data["Revenue"]}` : '$0',
+                    ...data  // include any extra fields dynamically
+                });
+            }
+
+            return campaigns;
+        }
+
+
+
+
+        // Function to create campaign row HTML
+        function createCampaignRow(campaign) {
+            return `
+                <div class="campaign-row">
+                    <div class="initials">
+                        <span class="initials-number">${campaign.initials}</span>
+                    </div>
+                    <div class="campaign-info">
+                        <div class="campaign-step">${campaign.step}</div>
+                    </div>
+                    <div class="conversion-rate">
+                        <span class="conversion-number">${campaign.conversionRate}</span>
+                    </div>
+                    <div class="revenue">
+                        <span class="revenue-number">${campaign.revenue}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Function to render campaigns for a section
+        function renderCampaigns(campaigns, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = campaigns.map(createCampaignRow).join('');
+        }
+
+        // Jinja2 template variables - will be replaced by Python
+        const campaign_data_1 = {"Metric": ["Campaign 1 Name", "Campaign 1 Revenue", "Campaign 1 Approvals", "Campaign 1 Approval Rate", "Campaign 2 Name", "Campaign 2 Revenue", "Campaign 2 Approvals", "Campaign 2 Approval Rate"], "Value": ["Eternal Lumi Deluxe VitC Step 3 (OTS)", "64", "1", "100.0", "Eternal Lumi Deluxe Skin Toner", "399", "16", "55.2"], "Date": "2025-09-20", "client_id": 10012};
+
+        // Display the date at the top of the page
+        const date =
+        campaign_data_1?.Date || "Date Not Available";
+
+        document.getElementById("yesterday-date").innerText = `Daily Stats : ${date}`;
+
+
+        // Transform the data and render
+        const section1Campaigns = transformPythonData(campaign_data_1);
+
+        // Render both sections
+        renderCampaigns(section1Campaigns, 'campaigns1');
+        renderCampaigns(section2Campaigns, 'campaigns2');
+
+        // Optional: Function to update data dynamically
+        function updateCampaignData(newData, sectionNumber) {
+            const transformedCampaigns = newData.map(transformPythonData);
+            renderCampaigns(transformedCampaigns, `campaigns${sectionNumber}`);
+        }
+    </script>
+</body>
+</html>

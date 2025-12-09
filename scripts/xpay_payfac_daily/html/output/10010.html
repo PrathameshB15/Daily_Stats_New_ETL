@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f3f4f6;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1024px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: -2rem;
+        }
+
+        .logo-circle {
+            width: 4rem;
+            height: 4rem;
+            background-color: black;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 2rem;
+        }
+
+        .product-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .product-row:last-child {
+            border-bottom: none;
+        }
+
+        .product-name {
+            color: #374151;
+            font-weight: 500;
+            overflow: visible;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.2;
+        }
+
+        .metric-value {
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .attempts {
+            color: #7c3aed;
+        }
+
+        .approvals {
+            color: #2563eb;
+        }
+
+        .approval-rate {
+            color: #059669;
+        }
+
+        .cb-count {
+            color: #dc2626;
+        }
+
+        .cb-rate {
+            color: #dc2626;
+        }
+
+        .header-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-cell {
+            font-weight: bold;
+            color: #6b7280;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+
+        .header-cell:first-child {
+            text-align: left;
+        }
+
+        @media (max-width: 768px) {
+            .product-row,
+            .header-row {
+                grid-template-columns: 1fr;
+                gap: 0.25rem;
+            }
+
+            .header-row {
+                display: none;
+            }
+
+            .product-row {
+                background: #f9fafb;
+                border-radius: 0.5rem;
+                padding: 1rem;
+                margin-bottom: 0.5rem;
+                border: none;
+                display: block;
+            }
+
+            .product-name {
+                font-size: 1.125rem;
+                margin-bottom: 0.5rem;
+                white-space: normal;
+            }
+
+            .metric-value {
+                text-align: left;
+                margin-bottom: 0.25rem;
+            }
+
+            .metric-value::before {
+                content: attr(data-label) ': ';
+                font-weight: normal;
+                color: #6b7280;
+            }
+        }
+
+        /* Add CSS for negative revenue */
+        .revenue-number.negative {
+            color: #dc2626; /* Tailwind red-600 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="icon.png" alt="Logo" width="100" height="100" />
+        </div>
+        <div id="yesterday-date" style="margin: 20px auto -10px auto; font-weight: bold; font-size: x-large; text-align: center;"></div>
+        <div class="section" id="section1">
+            
+            <h1 class="title" id="title1">PayFac Lender's Performance by Products</h1>
+            <div id="campaigns1"></div>
+        </div>
+
+        <!-- <div class="section" id="section2">
+            
+            <h1 class="title" id="title2">Top 5 Step 2 Campaigns</h1>
+            <div id="campaigns2"></div>
+        </div> -->
+    </div>
+
+    <script>
+
+        // Function to transform Python dict format to display format
+        // function transformPythonData(pythonDict) {
+        //     if (!pythonDict || !Array.isArray(pythonDict.Metric) || !Array.isArray(pythonDict.Value)) {
+        //         return []; // Return empty list if data is invalid
+        //     }
+
+        //     const metrics = pythonDict.Metric;
+        //     const values = pythonDict.Value;
+        //     const campaigns = [];
+
+        //     for (let i = 0; i < metrics.length; i += 4) {
+        //         // Guard against index out of range
+        //         if (i + 3 >= metrics.length || i + 3 >= values.length) continue;
+
+        //         const dataMap = {
+        //             [metrics[i]]: values[i],
+        //             [metrics[i + 1]]: values[i + 1],
+        //             [metrics[i + 2]]: values[i + 2],
+        //             [metrics[i + 3]]: values[i + 3],
+        //         };
+
+        //         campaigns.push({
+        //             initials: parseInt(dataMap[metrics[i + 2]] || '0'),
+        //             step: dataMap[metrics[i]] || '',
+        //             product: dataMap[metrics[i]] || '',
+        //             category: '',
+        //             conversionRate: dataMap[metrics[i + 3]] ? `${dataMap[metrics[i + 3]]}%` : '0%',
+        //             revenue: dataMap[metrics[i + 1]] ? `$${dataMap[metrics[i + 1]]}` : '$0'
+        //         });
+        //     }
+
+        //     return campaigns;
+        // }
+
+        function transformPythonData(pythonDict) {
+            if (!pythonDict || !Array.isArray(pythonDict.Metric) || !Array.isArray(pythonDict.Value)) {
+                return []; // Return empty list if data is invalid
+            }
+
+            const metrics = pythonDict.Metric;
+            const values = pythonDict.Value;
+            const products = [];
+
+            const productGroups = {};
+
+            // Step 1: Group metrics and values by product number using pattern in metric name
+            for (let i = 0; i < metrics.length; i++) {
+                const metricLabel = metrics[i]; // e.g., "Product 1 Name"
+                const value = values[i];
+                const match = metricLabel.match(/^Product (\d+) (.+)$/);
+
+                if (!match) continue;
+
+                const productNum = match[1];
+                const field = match[2];
+
+                if (!productGroups[productNum]) {
+                    productGroups[productNum] = {};
+                }
+
+                productGroups[productNum][field] = value;
+            }
+
+            // Step 2: Transform grouped data into the final product objects
+            for (const productNum of Object.keys(productGroups)) {
+                const data = productGroups[productNum];
+
+                products.push({
+                    productName: data["Name"] || 'N/A',
+                    attemptsCount: data["Attempts"] || '0',
+                    approvedSalesCount: data["Approvals"] || '0',
+                    approvalPercent: data["Approval Rate"] || '0.0%',
+                    cumulativeMTDCBCount: data["CB Count"] || '0',
+                    cumulativeMTDCBRatio: data["CB Rate"] || '0.0%',
+                    ...data  // include any extra fields dynamically
+                });
+            }
+
+            return products;
+        }
+
+
+
+
+        // Function to create product row HTML
+        function createProductRow(product) {
+            return `
+                <div class="product-row">
+                    <div class="product-name">${product.productName}</div>
+                    <div class="metric-value attempts" data-label="Attempts Count">${product.attemptsCount}</div>
+                    <div class="metric-value approvals" data-label="Approved Sales Count">${product.approvedSalesCount}</div>
+                    <div class="metric-value approval-rate" data-label="Approval %">${product.approvalPercent}</div>
+                    <div class="metric-value cb-count" data-label="Cumulative CB Count">${product.cumulativeMTDCBCount}</div>
+                    <div class="metric-value cb-rate" data-label="Cumulative CB Ratio">${product.cumulativeMTDCBRatio}</div>
+                </div>
+            `;
+        }
+
+        // Function to render products for a section
+        function renderProducts(products, containerId) {
+            const container = document.getElementById(containerId);
+            const headerRow = `
+                <div class="header-row">
+                    <div class="header-cell">Product Name</div>
+                    <div class="header-cell">Attempts Count</div>
+                    <div class="header-cell">Approved Sales Count</div>
+                    <div class="header-cell">Approval %</div>
+                    <div class="header-cell">Cumulative CB Count</div>
+                    <div class="header-cell">Cumulative CB Ratio</div>
+                </div>
+            `;
+            container.innerHTML = headerRow + products.map(createProductRow).join('');
+        }
+
+        // Jinja2 template variables - will be replaced by Python
+        const campaign_data_1 = {"Metric": ["Product 1 Name", "Product 1 Attempts", "Product 1 Approvals", "Product 1 Approval Rate", "Product 1 CB Count", "Product 1 CB Rate"], "Value": ["K-Luxia Skin Serum S1 Init", "39", "29", "74.4%", "1", "2.6%"], "Date": "2025-12-03", "client_id": 10010};
+
+        // Display the date at the top of the page
+        const date =
+        campaign_data_1?.Date || "Date Not Available";
+
+        document.getElementById("yesterday-date").innerText = `Daily Stats : ${date}`;
+
+
+        // Transform the data and render
+        const section1Products = transformPythonData(campaign_data_1);
+
+        // Render section
+        renderProducts(section1Products, 'campaigns1');
+
+        // Optional: Function to update data dynamically
+        function updateProductData(newData, sectionNumber) {
+            const transformedProducts = newData.map(transformPythonData);
+            renderProducts(transformedProducts, `campaigns${sectionNumber}`);
+        }
+    </script>
+</body>
+</html>

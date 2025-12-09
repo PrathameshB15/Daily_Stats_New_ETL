@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f3f4f6;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1024px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: -2rem;
+        }
+
+        .logo-circle {
+            width: 4rem;
+            height: 4rem;
+            background-color: black;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 2rem;
+        }
+
+        .campaign-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .campaign-row:last-child {
+            border-bottom: none;
+        }
+
+        .initials {
+            width: 4rem;
+            text-align: center;
+        }
+
+        .initials-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .campaign-info {
+            flex: 1;
+            padding: 0 1.5rem;
+        }
+
+        .campaign-step {
+            color: #374151;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .campaign-product {
+            color: #6b7280;
+        }
+
+        .conversion-rate {
+            width: 5rem;
+            text-align: center;
+        }
+
+        .conversion-number {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .revenue {
+            width: 6rem;
+            text-align: right;
+        }
+
+        .revenue-number {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #059669;
+        }
+
+        @media (max-width: 768px) {
+            .campaign-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                padding: 1rem 0;
+            }
+
+            .campaign-info {
+                padding: 0;
+                width: 100%;
+            }
+
+            .conversion-rate,
+            .revenue {
+                width: auto;
+                text-align: left;
+            }
+        }
+
+        /* Add CSS for negative revenue */
+        .revenue-number.negative {
+            color: #dc2626; /* Tailwind red-600 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="icon.png" alt="Logo" width="100" height="100" />
+        </div>
+        <div id="yesterday-date" style="margin: 20px auto -10px auto; font-weight: bold; font-size: x-large; text-align: center;"></div>
+        <div class="section" id="section1">
+            
+            <h1 class="title" id="title1">Net Revenue by Acquirer/Corp</h1>
+            <div id="campaigns1"></div>
+        </div>
+
+        <!-- <div class="section" id="section2">
+            
+            <h1 class="title" id="title2">Top 5 Step 2 Campaigns</h1>
+            <div id="campaigns2"></div>
+        </div> -->
+    </div>
+
+    <script>
+
+        function transformPythonData(pythonDict) {
+            if (!pythonDict || !Array.isArray(pythonDict.Metric) || !Array.isArray(pythonDict.Value)) {
+                return []; // Return empty list if data is invalid
+            }
+
+            const metrics = pythonDict.Metric;
+            const values = pythonDict.Value;
+            const campaigns = [];
+
+            // Each campaign has 3 metrics: Lender, Corp, NetRevenue
+            for (let i = 0; i < metrics.length; i += 3) {
+                // Guard against index out of range
+                if (i + 2 >= metrics.length || i + 2 >= values.length) continue;
+
+                campaigns.push({
+                    acquirer: values[i] || '',
+                    corp: values[i + 1] || '',
+                    netRevenue: values[i + 2] ? `$${values[i + 2]}` : '$0',
+                });
+            }
+
+            return campaigns;
+        }
+
+        // Function to create campaign row HTML
+        function createCampaignRow(campaign) {
+            // Format netRevenue as currency with commas, no decimals
+            let revenueValue = campaign.netRevenue.replace(/[^\d.-]/g, "");
+            const isNegative = parseFloat(revenueValue) < 0;
+            // Format with commas, currency symbol, no decimals
+            let formattedRevenue = parseFloat(revenueValue).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            const revenueClass = isNegative ? "revenue-number negative" : "revenue-number";
+            return `
+                <div class="campaign-row">
+                    <div class="campaign-info">
+                        <div class="campaign-step"><strong>Acquirer:</strong> ${campaign.acquirer}</div>
+                        <div class="campaign-product"><strong>Corp:</strong> ${campaign.corp}</div>
+                    </div>
+                    <div class="revenue">
+                        <span class="${revenueClass}">${formattedRevenue}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Function to render campaigns for a section
+        function renderCampaigns(campaigns, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = campaigns.map(createCampaignRow).join('');
+        }
+
+        // Jinja2 template variables - will be replaced by Python
+        const campaign_data_1 = {{ campaign_data_1|safe }};
+
+        // Display the date at the top of the page
+        const date =
+        campaign_data_1?.Date || "Date Not Available";
+
+        document.getElementById("yesterday-date").innerText = `Daily Stats : ${date}`;
+
+
+        // Transform the data and render
+        const section1Campaigns = transformPythonData(campaign_data_1);
+
+        // Render both sections
+        renderCampaigns(section1Campaigns, 'campaigns1');
+        renderCampaigns(section2Campaigns, 'campaigns2');
+
+        // Optional: Function to update data dynamically
+        function updateCampaignData(newData, sectionNumber) {
+            const transformedCampaigns = newData.map(transformPythonData);
+            renderCampaigns(transformedCampaigns, `campaigns${sectionNumber}`);
+        }
+    </script>
+</body>
+</html>
