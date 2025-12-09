@@ -29,6 +29,21 @@ import time
 from jinja2 import Environment, FileSystemLoader, Template
 import json
 import re
+import argparse
+
+
+def parse_arguments():
+    """Parse command line arguments for client IDs."""
+    parser = argparse.ArgumentParser(description='Process daily stats for specific client IDs')
+    parser.add_argument('--client-ids', type=str, 
+                       help='Comma-separated list of client IDs to process')
+    args = parser.parse_args()
+    
+    client_ids = []
+    if args.client_ids:
+        client_ids = [int(id.strip()) for id in args.client_ids.split(',') if id.strip()]
+    
+    return client_ids
 
 
 
@@ -285,9 +300,15 @@ if config['General'].getboolean(f'run_{script_name}'):
     # Initialize an empty list to store the final result
     result = []
 
-    client_ids = [10008, 10009, 10010, 10011, 10012, 10013, 10014, 10016]
-    # client_ids = [10011, 10012, 10013, 10014, 10016]
-    # client_ids = [10016]
+    # Parse command line arguments for client IDs
+    client_ids = parse_arguments()
+    
+    # If no client IDs provided via command line, use default client IDs
+    if not client_ids:
+        client_ids = [10008, 10009, 10010, 10011, 10012, 10013, 10014, 10016]
+        print("No client IDs provided. Using default client IDs:", client_ids)
+    else:
+        print("Processing client IDs:", client_ids)
     
     # Loop over each client_id to fetch the respective report_id and product_id
     for client_id in client_ids:

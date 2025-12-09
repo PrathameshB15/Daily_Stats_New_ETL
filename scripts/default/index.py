@@ -4,6 +4,7 @@ import psycopg2
 import pandas as pd
 import requests
 import sys
+import argparse
 from decimal import Decimal
 import numpy as np
 # Add the root directory to sys.path
@@ -522,9 +523,13 @@ if config['General'].getboolean(f'run_{script_name}'):
             return None
 
     # Function to get active clients from beast_insights_v2.clients table filtered by CRM
-    def get_active_clients():
+    def get_active_clients(client_ids=None):
         """Fetch list of active clients from beast_insights_v2.clients table filtered by CRM ID"""
         try:
+            # If specific client IDs are provided, return them directly
+            if client_ids:
+                print(f"Using provided client IDs: {client_ids}")
+                return [str(client_id) for client_id in client_ids]
             # Query to get active clients from the clients table filtered by CRM credentials
             # clients_query = """
             # SELECT c.id 
@@ -561,9 +566,21 @@ if config['General'].getboolean(f'run_{script_name}'):
             print(f"Error fetching active clients: {e}")
             return []
 
+    def parse_arguments():
+        """Parse command line arguments"""
+        parser = argparse.ArgumentParser(description='Daily Stats ETL Script - Default')
+        parser.add_argument('--client-ids', 
+                          nargs='+',
+                          type=int,
+                          help='List of client IDs to process (e.g., --client-ids 10007 10008)')
+        return parser.parse_args()
+
+    # Parse command line arguments
+    args = parse_arguments()
+    
     try:
-        # Get list of active clients dynamically
-        active_clients = get_active_clients()
+        # Get list of active clients dynamically or use provided client IDs
+        active_clients = get_active_clients(args.client_ids if args.client_ids else None)
         
         if not active_clients:
             print("No active clients found. Exiting.")

@@ -29,6 +29,21 @@ import time
 from jinja2 import Environment, FileSystemLoader, Template
 import json
 import re
+import argparse
+
+
+def parse_arguments():
+    """Parse command line arguments for client IDs."""
+    parser = argparse.ArgumentParser(description='Process daily stats for specific client IDs')
+    parser.add_argument('--client-ids', type=str, 
+                       help='Comma-separated list of client IDs to process')
+    args = parser.parse_args()
+    
+    client_ids = []
+    if args.client_ids:
+        client_ids = [int(id.strip()) for id in args.client_ids.split(',') if id.strip()]
+    
+    return client_ids
 
 
 
@@ -318,24 +333,15 @@ if config['General'].getboolean(f'run_{script_name}'):
     # Initialize an empty list to store the final result
     result = []
 
-    # Check if client IDs are provided as command line arguments
-    if len(sys.argv) > 1:
-        # Parse client IDs from command line arguments
-        try:
-            client_ids = [int(arg) for arg in sys.argv[1:] if arg.isdigit()]
-            if not client_ids:
-                raise ValueError("No valid client IDs provided")
-            print(f"📋 Running script for client IDs from command line: {client_ids}")
-        except ValueError as e:
-            print(f"❌ Error parsing client IDs: {e}")
-            print("💡 Usage: python index.py [client_id1] [client_id2] ...")
-            print("💡 Example: python index.py 10010 10016")
-            sys.exit(1)
-    else:
-        # Default client IDs if none provided
+    # Parse command line arguments for client IDs
+    client_ids = parse_arguments()
+    
+    # If no client IDs provided via command line, use default client IDs
+    if not client_ids:
         client_ids = [10010, 10016]
-        print(f"📋 No client IDs provided, using default: {client_ids}")
-        print("💡 To specify client IDs, use: python index.py [client_id1] [client_id2] ...")
+        print("No client IDs provided. Using default client IDs:", client_ids)
+    else:
+        print("Processing client IDs:", client_ids)
     
     # Loop over each client_id to fetch the respective report_id and product_id
     for client_id in client_ids:
