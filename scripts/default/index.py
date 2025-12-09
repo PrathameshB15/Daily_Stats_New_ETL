@@ -580,6 +580,7 @@ if config['General'].getboolean(f'run_{script_name}'):
             print(f"\nProcessing client {client_id}...")
             
             # Build query for individual client
+            # NOTE: TC40 alerts are excluded from refund counts/amounts for client 10042
             client_query = f"""
             SELECT
               {client_id} AS client_id,
@@ -600,9 +601,17 @@ if config['General'].getboolean(f'run_{script_name}'):
               COALESCE(SUM(cb_cb_date), 0) AS chargebacks_count,
               COALESCE(SUM(cb_cb_date_dollar), 0) AS chargebacks,
 
-              -- refund splits (Alert / CS)
-              COALESCE(SUM(CASE WHEN refund_type = 'Refund Alert' THEN refund_refund_date END), 0) AS refund_alert_count,
-              COALESCE(SUM(CASE WHEN refund_type = 'Refund Alert' THEN refund_refund_date_dollar END), 0) AS refund_alert_amount,
+              -- refund splits (Alert / CS) - TC40 exclusion for client 10042
+              COALESCE(SUM(
+                CASE WHEN refund_type = 'Refund Alert' 
+                     AND ({client_id} != 10042 OR oa.is_tc40 IS NULL OR oa.is_tc40 != 'Yes')
+                THEN refund_refund_date END
+              ), 0) AS refund_alert_count,
+              COALESCE(SUM(
+                CASE WHEN refund_type = 'Refund Alert' 
+                     AND ({client_id} != 10042 OR oa.is_tc40 IS NULL OR oa.is_tc40 != 'Yes')
+                THEN refund_refund_date_dollar END
+              ), 0) AS refund_alert_amount,
 
               COALESCE(SUM(CASE WHEN refund_type = 'Refund CS' THEN refund_refund_date END), 0) AS refund_cs_count,
               COALESCE(SUM(CASE WHEN refund_type = 'Refund CS' THEN refund_refund_date_dollar END), 0) AS refund_cs_amount,
@@ -624,11 +633,16 @@ if config['General'].getboolean(f'run_{script_name}'):
               (
                 COALESCE(SUM(revenue),0)
                 - COALESCE(SUM(cb_cb_date_dollar),0)
-                - COALESCE(SUM(CASE WHEN refund_type = 'Refund Alert' THEN refund_refund_date_dollar END),0)
+                - COALESCE(SUM(
+                  CASE WHEN refund_type = 'Refund Alert' 
+                       AND ({client_id} != 10042 OR oa.is_tc40 IS NULL OR oa.is_tc40 != 'Yes')
+                  THEN refund_refund_date_dollar END
+                ),0)
                 - COALESCE(SUM(CASE WHEN refund_type = 'Refund CS' THEN refund_refund_date_dollar END),0)
               ) AS net_revenue
 
-            FROM "reporting"."order_summary_{client_id}"
+            FROM "reporting"."order_summary_{client_id}" os
+            LEFT JOIN "order_alerts" oa ON os.order_id = oa.order_id
             WHERE date = '{yesterday}';
             """
             
